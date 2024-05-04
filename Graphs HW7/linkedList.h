@@ -5,7 +5,9 @@
 #include "node.h"
 
 template<class LabelType>
-class LinkedList : public ListInterface<LabelType> {
+class LinkedList : public ListInterface<LabelType> 
+{
+private:
 	Node<LabelType>* headPtr;
 	int itemCount; // Current count of list items
 
@@ -50,6 +52,83 @@ public:
 		itemCount = aList.itemCount;
 	}
 
+	//Iterator
+	class Iterator
+	{
+	private:
+		Node<LabelType>* current_node;
+	public:
+		Iterator(Node<LabelType>* nodePtr) : current_node(nodePtr) { }
+
+		Iterator& operator=(Node<LabelType>* nodePtr)
+		{
+			this->current_node = nodePtr;
+			return *this;
+		}
+
+		Iterator& operator++()
+		{
+			if (current_node)
+			{
+				current_node = current_node->getNext();
+			}
+			return *this;
+		}
+
+		Iterator operator++(int)
+		{
+			Iterator iterator = *this;
+			++(*this);
+			return iterator;
+		}
+
+		Iterator& operator--()
+		{
+			if (current_node)
+			{
+				current_node = current_node->getPrev();
+			}
+			return *this;
+		}
+
+		Iterator operator--(int)
+		{
+			Iterator iterator = *this;
+			--(*this);
+			return iterator;
+		}
+
+		bool operator==(const Iterator& iterator)
+		{
+			return current_node == iterator.current_node;
+		}
+
+		bool operator!=(const Iterator& iterator)
+		{
+			return current_node != iterator.current_node;
+		}
+
+		bool operator<(const Iterator& iterator)
+		{
+			return current_node < iterator.current_node;
+		}
+
+		LabelType operator*()
+		{
+			return current_node->getItem();
+		}
+	};
+
+	Iterator begin()
+	{
+		return Iterator(headPtr);
+	}
+
+	Iterator end()
+	{
+		return Iterator(nullptr);
+	}
+
 	bool isEmpty() const {
 		return itemCount == 0;
 	}
@@ -81,6 +160,7 @@ public:
 				Node<LabelType>* prevPtr = getNodeAt(newPosition - 1);
 				Node<LabelType>* curPtr = getNodeAt(newPosition);
 
+				curPtr->setPrev(prevPtr);
 				prevPtr->setNext(newPtr);
 				newPtr->setNext(curPtr);
 
@@ -106,6 +186,7 @@ public:
 				ptrToDelete = prevPtr->getNext();
 				// Disconnect indicated node from chain by connecting the prior node with the one after
 				prevPtr->setNext(ptrToDelete->getNext());
+				ptrToDelete->getNext()->setPrev(prevPtr);
 			}
 
 			ptrToDelete->setNext(nullptr);
@@ -156,4 +237,5 @@ public:
 		clear();
 	}
 };
+
 #endif

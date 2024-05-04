@@ -4,6 +4,7 @@
 #include "graph.h"
 #include "vertex.h"
 #include "linkedList.h"
+#include <unordered_map>
 
 template<class LabelType>
 class AdjacencyListGraph : public GraphInterface<LabelType>
@@ -15,12 +16,14 @@ private:
     struct Edge
     {
         //relationships are stored inside the edge which connects verticies
-        int edgeWeight;
+        float edgeWeight;
         vertex<LabelType>* firstVertex;
         vertex<LabelType>* secondVertex;
     };
 
     LinkedList<Edge> edge_list;
+    LinkedList<vertex<LabelType>*> vertex_list;
+    unordered_map<LabelType, LinkedList<pair<LabelType, float>>> adjacency_list;
 public:
     AdjacencyListGraph() : edgeTotal(0), vertexTotal(0) { }
 
@@ -39,7 +42,7 @@ public:
         return nullptr;
     }
 
-    int getEdgeListPos(LabelType start, LabelType end) const
+    int getEdgeListPos(LabelType start, LabelType end) const //helper function for accessing linkedlist
     {
         vertex<LabelType>* startPtr = visit(start);
         vertex<LabelType>* endPtr = visit(end);
@@ -53,17 +56,42 @@ public:
                 return i;
             }
         }
-        return -1;
+        return -1; //edge not found
     }
 
-    void printAdjacentEdgeList()
+    unordered_map<LabelType, LinkedList<pair<LabelType, float>>> getAdjacencyList()
     {
-        for (int i = 1; i <= edge_list.getLength(); i++)
+        adjacency_list.clear(); //ensures adjacency list is updated
+        for (int i = 1; i <= vertex_list.getLength(); i++)
         {
-            Edge edge = edge_list.getEntry(i);
-            edge.firstVertex->printAdjacentList();
-            edge.secondVertex->printAdjacentList();
+            vertex<LabelType>* current_vertex = vertex_list.getEntry(i);
+            adjacency_list.insert(make_pair(current_vertex->getData(), current_vertex->getAdjacentVertices()));
         }
+
+        return adjacency_list;
+    }
+
+    float getPathDistance(LinkedList<LabelType>& path, LabelType starting_vertex) const
+    {
+        float distance = 0;
+
+        for (int i = 1; i <= path.getLength(); i++)
+        {
+            LabelType current_city = path.getEntry(i);
+            LabelType next_city = path.getEntry(i + 1);
+            distance += getEdgeWeight(current_city, next_city);
+        }
+
+        //paths are circular and don't include start or end
+        distance += getEdgeWeight(starting_vertex, path.getEntry(1));
+        distance += getEdgeWeight(starting_vertex, path.getEntry(path.getLength()));
+
+        return distance;
+    }
+
+    LinkedList<LabelType> getVertexList()
+    {
+        return vertex_list;
     }
 
     //Getters
@@ -72,12 +100,13 @@ public:
     {
         return vertexTotal;
     }
+
     int getNumEdges() const
     {
         return edgeTotal;
     }
 
-    int getEdgeWeight(LabelType start, LabelType end) const
+    float getEdgeWeight(LabelType start, LabelType end) const
     {
         int edge_pos = getEdgeListPos(start, end);
         if (edge_pos != -1)
@@ -89,9 +118,16 @@ public:
 
     //Graph Functionality
 
-    bool add(LabelType start, LabelType end, int edgeWeight)
+    bool add(LabelType start, LabelType end, float edgeWeight)
     {
-        if (start == end) { return false; } //no loops allowed!
+        if (start == end) { return false; } //no loops!
+
+        //check if edge already exists
+        int edge_pos = getEdgeListPos(start, end);
+        if (edge_pos != -1) //edge was found
+        {
+            return false;
+        }
 
         vertex<LabelType>* startPtr = visit(start);
         vertex<LabelType>* endPtr = visit(end);
@@ -99,26 +135,22 @@ public:
         if (startPtr == nullptr)
         {
             startPtr = new vertex<LabelType>(start);
+            vertex_list.insert(1, startPtr);
             vertexTotal++;
         }
         if (endPtr == nullptr)
         {
             endPtr = new vertex<LabelType>(end);
+            vertex_list.insert(1, endPtr);
             vertexTotal++;
         }
-
-        //check if edge already exists
-        int edge_pos = getEdgeListPos(start, end);
-        if (edge_pos != -1)
-        {
-                return false; //edge already exists!
-        }
-
-        Edge newEdge = { edgeWeight, startPtr, endPtr };
-        edge_list.insert(1, newEdge);
-        startPtr->addAdjacentVertex(endPtr);
-        endPtr->addAdjacentVertex(startPtr);
+        //initalize new edge
+        Edge new_edge = { edgeWeight, startPtr, endPtr };
+        edge_list.insert(1, new_edge);
         edgeTotal++;
+        //set adjacency
+        startPtr->setAdjacentVertex(endPtr->getData(), edgeWeight);
+        endPtr->setAdjacentVertex(startPtr->getData(), edgeWeight);
 
         return true;
     }
@@ -128,18 +160,40 @@ public:
         int edge_pos = getEdgeListPos(start, end);
         if (edge_pos != -1) //edge exists to delete
         {
+            //remove edge and adjacency
             Edge edge_struct = edge_list.getEntry(edge_pos);
-            edge_struct.firstVertex->removeAdjacentVertex(edge_struct.secondVertex);
-            edge_struct.secondVertex->removeAdjacentVertex(edge_struct.firstVertex);
+            edge_struct.firstVertex->removeAdjacentVertex(edge_struct.secondVertex->getData());
+            edge_struct.secondVertex->removeAdjacentVertex(edge_struct.firstVertex->getData());
             edge_list.remove(edge_pos);
+            edgeTotal--;
 
-            //check to see how many vertices to remove
+            //remove vertices
             vertex<LabelType>* startPtr = visit(start);
             vertex<LabelType>* endPtr = visit(end);
-            if (startPtr == nullptr) { vertexTotal--; }
-            if (endPtr == nullptr) { vertexTotal--; }
 
-            edgeTotal--;
+            if (startPtr == nullptr) 
+            { 
+                for (int i = 1; i <= vertex_list.getLength(); i++)
+                {
+                    if (vertex_list.getEntry(i)->getData() == start) 
+                    { 
+                        vertex_list.remove(i); 
+                        vertexTotal--;
+                    }
+                }
+            }
+            if (endPtr == nullptr)
+            {
+                for (int i = 1; i <= vertex_list.getLength(); i++)
+                {
+                    if (vertex_list.getEntry(i)->getData() == end)
+                    {
+                        vertex_list.remove(i);
+                        vertexTotal--;
+                    }
+                }
+            }
+
             return true;
         }
         else { return false; }

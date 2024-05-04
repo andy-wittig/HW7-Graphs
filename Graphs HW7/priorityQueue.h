@@ -3,15 +3,15 @@
 
 #include "arrayQueue.h"
 
-template<class ItemType>
-class PriorityQueue : public ArrayQueue<ItemType>
+template<class LabelType>
+class PriorityQueue : public ArrayQueue<LabelType>
 {
 private:
     int front;
     int back;
     int count;
     static const int ARRAY_SIZE = 100;
-    ItemType priority_queue[ARRAY_SIZE];
+    LabelType priority_queue[ARRAY_SIZE];
 public:
     PriorityQueue() : back(-1), front(0), count(0) { }
 
@@ -20,7 +20,7 @@ public:
         return count <= 0;
     }
 
-    bool enqueue(ItemType& newEntry)
+    bool enqueue(const LabelType& newEntry)
     {
         if (count >= ARRAY_SIZE) { return false; } //array at capacity
 
@@ -59,7 +59,7 @@ public:
         else { return false; }
     }
 
-    ItemType peekFront() const
+    LabelType peekFront() const
     {
         bool canPeek = !isEmpty();
         if (canPeek)

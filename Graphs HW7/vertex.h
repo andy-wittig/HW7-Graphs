@@ -7,41 +7,35 @@ template <class LabelType>
 class vertex
 {
 private:
-	LabelType vertexData; //data is stored in the vertex
-	LinkedList<vertex<LabelType>*> vertexAdjacencyList;
+	LabelType vertex_data; //data is stored in the vertex
+	LinkedList<pair<LabelType, float>> adjacent_vertices;
 public:
-	vertex(const LabelType& data) : vertexData(data) { }
+	vertex(const LabelType& data) : vertex_data(data) { }
 
 	LabelType getData() const
 	{
-		return vertexData;
+		return vertex_data;
 	}
 
-	void addAdjacentVertex(vertex<LabelType>* vertexPtr)
+	void setAdjacentVertex(LabelType vertexData, float edgeWeight)
 	{
-		vertexAdjacencyList.insert(1, vertexPtr);
+		adjacent_vertices.insert(1, make_pair(vertexData, edgeWeight));
 	}
 
-	void removeAdjacentVertex(vertex<LabelType>* vertexPtr)
+	void removeAdjacentVertex(LabelType vertexData)
 	{
-		for (int i = 1; i <= vertexAdjacencyList.getLength(); i++)
+		for (int i = 1; i <= adjacent_vertices.getLength(); i++)
 		{
-			if (vertexAdjacencyList.getEntry(i) == vertexPtr)
+			if (adjacent_vertices.getEntry(i).first == vertexData)
 			{
-				vertexAdjacencyList.remove(i);
+				adjacent_vertices.remove(i);
 			}
 		}
 	}
 
-	void printAdjacentList()
+	LinkedList<pair<LabelType, float>> getAdjacentVertices() const
 	{
-		cout << vertexData << ": ";
-		for (int i = 1; i <= vertexAdjacencyList.getLength(); i++)
-		{
-			string adjacent_vertex = vertexAdjacencyList.getEntry(i)->getData();
-			cout << adjacent_vertex << " ";
-		}
-		cout << endl;
+		return adjacent_vertices;
 	}
 
 	~vertex() { }
