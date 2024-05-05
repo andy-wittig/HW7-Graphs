@@ -133,7 +133,6 @@
     <ClInclude Include="linkedList.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="node.h" />
-    <ClInclude Include="priorityQueue.h" />
     <ClInclude Include="queue.h" />
     <ClInclude Include="vertex.h" />
   </ItemGroup>

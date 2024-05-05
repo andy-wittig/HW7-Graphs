@@ -1,10 +1,12 @@
 #ifndef LINKED_GRAPH
 #define LINKED_GRAPH
 
+#include <unordered_map>
+
 #include "graph.h"
 #include "vertex.h"
 #include "linkedList.h"
-#include <unordered_map>
+#include "arrayQueue.h"
 
 template<class LabelType>
 class AdjacencyListGraph : public GraphInterface<LabelType>
@@ -132,18 +134,18 @@ public:
         if (startPtr == nullptr)
         {
             startPtr = new vertex<LabelType>(start);
-            vertex_list.insert(1, startPtr);
+            vertex_list.push_back(startPtr);
             vertexTotal++;
         }
         if (endPtr == nullptr)
         {
             endPtr = new vertex<LabelType>(end);
-            vertex_list.insert(1, endPtr);
+            vertex_list.push_back(endPtr);
             vertexTotal++;
         }
         //initalize new edge
         Edge new_edge = { edgeWeight, startPtr, endPtr };
-        edge_list.insert(1, new_edge);
+        edge_list.push_back(new_edge);
         edgeTotal++;
         //set adjacency
         startPtr->setAdjacentVertex(endPtr->getData(), edgeWeight);
@@ -219,7 +221,34 @@ public:
 
     void breadthFirstTraversal(LabelType start, void visit(LabelType&))
     {
-        
+        breadthFirstTraversalHelper(start, visit);
+        vertices_visited.clear();
+    }
+
+    void breadthFirstTraversalHelper(LabelType start, void visit(LabelType&))
+    {
+        ArrayQueue<LabelType> queue;
+        auto temp_adjacency_list = getAdjacencyList();
+
+        vertices_visited[start] = true;
+        queue.enqueue(start);
+
+        while (!queue.isEmpty())
+        {
+            LabelType current_vertex = queue.peekFront();
+            queue.dequeue();
+
+            visit(current_vertex);
+
+            for (const auto& adj_vertex : temp_adjacency_list[current_vertex])
+            {
+                if (!vertices_visited[adj_vertex.first])
+                {
+                    vertices_visited[adj_vertex.first] = true;
+                    queue.enqueue(adj_vertex.first);
+                }
+            }
+        }
     }
 
     ~AdjacencyListGraph() { }

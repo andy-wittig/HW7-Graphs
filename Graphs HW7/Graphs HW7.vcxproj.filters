@@ -45,9 +45,6 @@
     <ClInclude Include="queue.h">
       <Filter>Header Files\priority queue</Filter>
     </ClInclude>
-    <ClInclude Include="priorityQueue.h">
-      <Filter>Header Files\priority queue</Filter>
-    </ClInclude>
     <ClInclude Include="arrayQueue.h">
       <Filter>Header Files\priority queue</Filter>
     </ClInclude>

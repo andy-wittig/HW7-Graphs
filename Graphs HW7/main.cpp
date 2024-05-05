@@ -7,13 +7,13 @@
 using namespace std;
 
 #include "adjacencyListGraph.h"
-#include "priorityQueue.h"
 
 void addToGraph(GraphInterface<string>&);
 void removeFromGraph(GraphInterface<string>&);
 void getGraphEdgeWeight(GraphInterface<string>&);
 void getGraphAdjacencyList(AdjacencyListGraph<string>&);
 void getDepthTraversal(AdjacencyListGraph<string>&);
+void getBreadthTraversal(AdjacencyListGraph<string>&);
 void runShortestPathSimulation();
 
 int getChoice();
@@ -44,6 +44,9 @@ int main()
 			getDepthTraversal(graph);
 			break;
 		case 6:
+			getBreadthTraversal(graph);
+			break;
+		case 7:
 			runShortestPathSimulation();
 			break;
 		case 0:
@@ -67,7 +70,8 @@ int getChoice()
 	cout << "3. Get edge weight." << endl;
 	cout << "4. Get graph adjacency list." << endl;
 	cout << "5. Get depth traversal of graph." << endl;
-	cout << "6. Run shortest path salesman simulation." << endl;
+	cout << "6. Get breadth traversal of graph." << endl;
+	cout << "7. Run shortest path salesman simulation." << endl;
 	cout << "--------------------" << endl;
 
 	cin >> input_choice;
@@ -254,5 +258,17 @@ void getDepthTraversal(AdjacencyListGraph<string>& graph)
 	cout << "Please enter the starting vertex to traverse from:" << endl;
 	cin >> start_vertex;
 	cout << "Depth first traversal: ";
+
 	graph.depthFirstTraversal(start_vertex, display);
+}
+
+void getBreadthTraversal(AdjacencyListGraph<string>& graph)
+{
+	string start_vertex;
+
+	cout << "Please enter the starting vertex to traverse from:" << endl;
+	cin >> start_vertex;
+	cout << "Breadth first traversal: ";
+
+	graph.breadthFirstTraversal(start_vertex, display);
 }
