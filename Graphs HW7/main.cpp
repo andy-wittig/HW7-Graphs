@@ -1,22 +1,26 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
 #include "adjacencyListGraph.h"
 #include "priorityQueue.h"
-#include <algorithm>
 
 void addToGraph(GraphInterface<string>&);
 void removeFromGraph(GraphInterface<string>&);
 void getGraphEdgeWeight(GraphInterface<string>&);
-void runDijkstraSimulation();
+void getGraphAdjacencyList(AdjacencyListGraph<string>&);
+void getDepthTraversal(AdjacencyListGraph<string>&);
+void runShortestPathSimulation();
 
 int getChoice();
 
 int main()
 {
-	AdjacencyListGraph<string> my_graph;
+	AdjacencyListGraph<string> graph;
 
 	int menu_choice;
 	do
@@ -25,16 +29,22 @@ int main()
 		switch (menu_choice)
 		{
 		case 1:
-			addToGraph(my_graph);
+			addToGraph(graph);
 			break;
 		case 2:
-			removeFromGraph(my_graph);
+			removeFromGraph(graph);
 			break;
 		case 3:
-			getGraphEdgeWeight(my_graph);
+			getGraphEdgeWeight(graph);
 			break;
 		case 4:
-			runDijkstraSimulation();
+			getGraphAdjacencyList(graph);
+			break;
+		case 5:
+			getDepthTraversal(graph);
+			break;
+		case 6:
+			runShortestPathSimulation();
 			break;
 		case 0:
 			break;
@@ -55,81 +65,105 @@ int getChoice()
 	cout << "1. Add edge to graph." << endl;
 	cout << "2. Remove edge from graph." << endl;
 	cout << "3. Get edge weight." << endl;
-	cout << "4. Run Djikstra's algorithm salesman simulation." << endl;
+	cout << "4. Get graph adjacency list." << endl;
+	cout << "5. Get depth traversal of graph." << endl;
+	cout << "6. Run shortest path salesman simulation." << endl;
 	cout << "--------------------" << endl;
 
 	cin >> input_choice;
 	return input_choice;
 }
 
-void runDijkstraSimulation()
+void runShortestPathSimulation()
 {
+
+	ofstream output_file("shortest_distance.txt");
+	ifstream input_file;
+	string get_line;
+	vector<string> cities;
+	vector<string> shortest_path;
+
 	AdjacencyListGraph<string> city_graph;
+	string starting_city = "RNO";
+	float minimum_path_cost = 1e9;
 
-	//initalize graph (distance in miles to city divided by 40mpg to give gallons)
-	city_graph.add("RNO", "SFO", 5.45);
-	city_graph.add("RNO", "SLC", 12.95);
-	city_graph.add("RNO", "SEA", 17.6);
-	city_graph.add("RNO", "LAS", 10.975);
-
-	city_graph.add("SFO", "RNO", 5.45);
-	city_graph.add("SFO", "SLC", 18.4);
-	city_graph.add("SFO", "SEA", 20.2);
-	city_graph.add("SFO", "LAS", 14.225);
-
-	city_graph.add("SLC", "SFO", 18.4);
-	city_graph.add("SLC", "RNO", 12.95);
-	city_graph.add("SLC", "SEA", 20.725);
-	city_graph.add("SLC", "LAS", 10.525);
-
-	city_graph.add("SEA", "SFO", 20.2);
-	city_graph.add("SEA", "SLC", 20.725);
-	city_graph.add("SEA", "RNO", 17.6);
-	city_graph.add("SEA", "LAS", 27.825);
-
-	city_graph.add("LAS", "SFO", 14.225);
-	city_graph.add("LAS", "SLC", 10.525);
-	city_graph.add("LAS", "SEA", 27.825);
-	city_graph.add("LAS", "RNO", 10.975);
-
-	//PriorityQueue<pair<string, float>> priority_queue;
+	input_file.open("city_distances.txt");
+	while (getline(input_file, get_line))
+	{
+		stringstream stream_line(get_line);
+		string city_1, city_2;
+		float dist;
+		stream_line >> city_1 >> city_2 >> dist;
+		city_graph.add(city_1, city_2, dist); //initalize graph (distance in miles to city divided by 40mpg to give gallons)
+	}
 	unordered_map<string, LinkedList<pair<string, float>>> adjacency_list(city_graph.getAdjacencyList());
 
-	cout << "Adjacency list:" << endl;
+	output_file << "Adjacency list:" << endl;
 	for (const auto& cur_vertex : adjacency_list)
 	{
-		cout << "(" << cur_vertex.first << "): ";
+		output_file << "(" << cur_vertex.first << "): ";
 		for (int i = 1; i <= cur_vertex.second.getLength(); i++)
 		{
-			cout << "{" << cur_vertex.second.getEntry(i).first << ", ";
-			cout << cur_vertex.second.getEntry(i).second << "} ";
+			output_file << "{" << cur_vertex.second.getEntry(i).first << ", ";
+			output_file << cur_vertex.second.getEntry(i).second << "} ";
 		}
-		cout << endl;
+		output_file << endl;
 	}
 
-	LinkedList<string> vertices;
-	string starting_city = "RNO";
-	float minimum_cost = 1e9;
-
-	for (const auto& cur_vertex : adjacency_list) //create list of vertices exluding the start
+	//create vect of cities exluding the start
+	for (const auto& cur_vertex : adjacency_list)
 	{
 		if (cur_vertex.first != starting_city)
 		{
-			vertices.insert(1, cur_vertex.first);
+			cities.push_back(cur_vertex.first);
 		}
 	}
 
-	for (auto it = vertices.begin(); it != vertices.end(); ++it) {
-		std::cout << *it << " ";
-	}
-
+	output_file << "\nPermutations: " << endl;
 	do
 	{
-		float permutation_cost = city_graph.getPathDistance(vertices, starting_city);
-		minimum_cost = min(minimum_cost, permutation_cost);
-	} while (next_permutation(vertices.begin(), vertices.end()));
+		LinkedList<string> new_path;
 
-	cout << minimum_cost << endl;
+		bool valid_permutation = true;
+		for (int i = 0; i < cities.size()-1; i++) //ensure permutation is valid path
+		{
+			if (city_graph.getEdgeListPos(cities[i], cities[i + 1]) == -1)
+			{
+				valid_permutation = false;
+			}
+		}
+		if (!valid_permutation) { continue; }
+
+		//construct new permutation path
+		output_file << starting_city << "->";
+		new_path.push_back(starting_city);
+		for (auto& city : cities)
+		{
+			output_file << city << "->";
+			new_path.push_back(city); //convert to linked list to find distance
+		}
+		output_file << starting_city << endl;
+		new_path.push_back(starting_city); //ends back at start
+
+		//find if new path is shortest and update accordingly
+		float current_path_cost;
+		current_path_cost = city_graph.getPathDistance(new_path);
+		if (minimum_path_cost > current_path_cost)
+		{
+			minimum_path_cost = current_path_cost;
+			shortest_path = cities;
+		}
+	} while (next_permutation(cities.begin(), cities.end()));
+
+	output_file << "\nShortest path: " << starting_city << "->";
+	for (auto& city : shortest_path)
+	{
+		output_file << city << "->";
+	}
+	output_file << starting_city << endl;
+	output_file << "Minimum gas consumption for shortest trip: " << minimum_path_cost << endl;
+	output_file.close();
+	cout << "Generated shortest path simulation to shortest_distance.txt" << endl;
 }
 
 void addToGraph(GraphInterface<string>& graph)
@@ -189,4 +223,36 @@ void getGraphEdgeWeight(GraphInterface<string>& graph)
 	float edge_weight = graph.getEdgeWeight(start_vertex, end_vertex);
 	if (edge_weight != -1) { cout << "The edge's weight is: " << edge_weight << endl; }
 	else { cout << "That edge doesn't exist!"; }
+}
+
+void getGraphAdjacencyList(AdjacencyListGraph<string>& graph)
+{
+	unordered_map<string, LinkedList<pair<string, float>>> adjacency_list(graph.getAdjacencyList());
+
+	cout << "Adjacency list:" << endl;
+	for (const auto& cur_vertex : adjacency_list)
+	{
+		cout << "(" << cur_vertex.first << "): ";
+		for (int i = 1; i <= cur_vertex.second.getLength(); i++)
+		{
+			cout << "{" << cur_vertex.second.getEntry(i).first << ", ";
+			cout << cur_vertex.second.getEntry(i).second << "} ";
+		}
+		cout << endl;
+	}
+}
+
+void display(string &data) //display helper
+{
+	cout << data << " ";
+}
+
+void getDepthTraversal(AdjacencyListGraph<string>& graph)
+{
+	string start_vertex;
+
+	cout << "Please enter the starting vertex to traverse from:" << endl;
+	cin >> start_vertex;
+	cout << "Depth first traversal: ";
+	graph.depthFirstTraversal(start_vertex, display);
 }

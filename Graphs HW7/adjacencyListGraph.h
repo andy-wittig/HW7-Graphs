@@ -23,13 +23,14 @@ private:
 
     LinkedList<Edge> edge_list;
     LinkedList<vertex<LabelType>*> vertex_list;
+    unordered_map<LabelType, bool> vertices_visited;
     unordered_map<LabelType, LinkedList<pair<LabelType, float>>> adjacency_list;
 public:
     AdjacencyListGraph() : edgeTotal(0), vertexTotal(0) { }
 
     //Helpers
 
-    vertex<LabelType>* visit(LabelType data_to_find) const
+    vertex<LabelType>* findVertex(LabelType data_to_find) const
     {
         for (int i = 1; i <= edge_list.getLength(); i++) //traverse edge list
         {
@@ -44,8 +45,8 @@ public:
 
     int getEdgeListPos(LabelType start, LabelType end) const //helper function for accessing linkedlist
     {
-        vertex<LabelType>* startPtr = visit(start);
-        vertex<LabelType>* endPtr = visit(end);
+        vertex<LabelType>* startPtr = findVertex(start);
+        vertex<LabelType>* endPtr = findVertex(end);
 
         for (int i = 1; i <= edge_list.getLength(); i++)
         {
@@ -71,20 +72,16 @@ public:
         return adjacency_list;
     }
 
-    float getPathDistance(LinkedList<LabelType>& path, LabelType starting_vertex) const
+    float getPathDistance(LinkedList<LabelType>& path) const
     {
         float distance = 0;
 
-        for (int i = 1; i <= path.getLength(); i++)
+        for (int i = 1; i < path.getLength(); i++)
         {
             LabelType current_city = path.getEntry(i);
             LabelType next_city = path.getEntry(i + 1);
             distance += getEdgeWeight(current_city, next_city);
         }
-
-        //paths are circular and don't include start or end
-        distance += getEdgeWeight(starting_vertex, path.getEntry(1));
-        distance += getEdgeWeight(starting_vertex, path.getEntry(path.getLength()));
 
         return distance;
     }
@@ -129,8 +126,8 @@ public:
             return false;
         }
 
-        vertex<LabelType>* startPtr = visit(start);
-        vertex<LabelType>* endPtr = visit(end);
+        vertex<LabelType>* startPtr = findVertex(start);
+        vertex<LabelType>* endPtr = findVertex(end);
 
         if (startPtr == nullptr)
         {
@@ -168,8 +165,8 @@ public:
             edgeTotal--;
 
             //remove vertices
-            vertex<LabelType>* startPtr = visit(start);
-            vertex<LabelType>* endPtr = visit(end);
+            vertex<LabelType>* startPtr = findVertex(start);
+            vertex<LabelType>* endPtr = findVertex(end);
 
             if (startPtr == nullptr) 
             { 
@@ -200,14 +197,29 @@ public:
     }
 
     //Traversals
-
     void depthFirstTraversal(LabelType start, void visit(LabelType&))
     {
-
+        depthFirstTraversalHelper(start, visit);
+        vertices_visited.clear();
     }
+
+    void depthFirstTraversalHelper(LabelType start, void visit(LabelType&))
+    {
+        visit(start);
+        vertices_visited[start] = true;
+        auto temp_adjacency_list = getAdjacencyList();
+        for (const auto& adj_vertex : temp_adjacency_list[start])
+        {
+            if (!vertices_visited[adj_vertex.first])
+            {
+                depthFirstTraversalHelper(adj_vertex.first, visit);
+            }
+        }
+    }
+
     void breadthFirstTraversal(LabelType start, void visit(LabelType&))
     {
-
+        
     }
 
     ~AdjacencyListGraph() { }
