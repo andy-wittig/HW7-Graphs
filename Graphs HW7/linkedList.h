@@ -142,6 +142,7 @@ public:
 			itemCount++;
 			return ableToInsert;
 		}
+		return false;
 	}
 
 	void push_back(const LabelType& newEntry) 
